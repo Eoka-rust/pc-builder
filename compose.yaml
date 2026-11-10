@@ -26,7 +26,8 @@ services:
     image: ${IMAGE_REPO:-pcbuilder-api}:${IMAGE_TAG:-local}
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-pcbuilder}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:-pcbuilder}
-      APP_VERSION: ${APP_VERSION:-0.0.0-dev}
+      # APP_VERSION не задаём: версия приходит из образа (build-arg при релизе),
+      # иначе env перекрывает её и /health врёт про выкаченную версию.
       SEED_ON_START: ${SEED_ON_START:-true}
     depends_on:
       db:
