@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag must be semver vX.Y.Z
+        run: |
+          if ! [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Тег ${GITHUB_REF_NAME} не соответствует semver vX.Y.Z" >&2
+            exit 1
+          fi
+
+      - name: Tag must be on main
+        run: |
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "Тег поставлен не на коммит из main" >&2
+            exit 1
+          fi
+
+      - name: Tag must match pyproject version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          project_version=$(python3 -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")
+          echo "tag=$version pyproject=$project_version"
+          if [ "$version" != "$project_version" ]; then
+            echo "Версия в pyproject.toml не совпадает с тегом" >&2
+            exit 1
+          fi
+
+  check:
+    name: check
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: build ${{ github.ref_name }}
+    needs: [verify, check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name (lowercase)
+        id: meta
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Version
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push versioned image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.value }}
+          tags: |
+            ${{ steps.meta.outputs.name }}:${{ steps.version.outputs.value }}
+            ${{ steps.meta.outputs.name }}:${{ github.ref_name }}
+            ${{ steps.meta.outputs.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract changelog section
+        run: |
+          awk -v v="${{ steps.version.outputs.value }}" '
+            $0 ~ "^## \\["v"\\]" {flag=1; next}
+            /^## \[/ {flag=0}
+            flag' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "В CHANGELOG.md нет раздела для версии ${{ steps.version.outputs.value }}" >&2
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md \
+            --verify-tag
