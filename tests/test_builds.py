@@ -92,3 +92,25 @@ def test_list_and_delete_build(client, catalog):
 
     assert client.delete(f"/builds/{created['id']}").status_code == 204
     assert client.get(f"/builds/{created['id']}").status_code == 404
+
+
+def test_check_without_gpu_returns_report_not_500(client, catalog):
+    models = [
+        "Ryzen 5 7600",
+        "B650 GAMING PLUS WIFI",
+        "FURY Beast DDR5 16GB 5600",
+        "System Power 10 650W",
+        "i3 Neo",
+    ]
+    payload = {
+        "name": "Без видеокарты",
+        "items": [{"component_id": catalog[model]["id"], "quantity": 1} for model in models],
+    }
+
+    response = client.post("/builds/check", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["errors"] == []
+    assert body["estimated_power_w"] == 125

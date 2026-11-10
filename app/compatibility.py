@@ -165,8 +165,8 @@ def evaluate(rows: list[tuple]) -> Report:
     ram_gb = _total(rows, Category.ram)
     report.estimated_power_w = (
         BASE_LOAD_W
-        + (cpu.tdp_w or 0)
-        + (gpu.tdp_w or 0)
+        + ((cpu.tdp_w or 0) if cpu else 0)
+        + ((gpu.tdp_w or 0) if gpu else 0)
         + (10 if ram_gb > 32 else 0)
         + (5 if storage_tb else 0)
     )

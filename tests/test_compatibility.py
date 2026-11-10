@@ -127,3 +127,13 @@ def test_form_factor_must_be_supported(base_set):
     )
 
     assert "form_factor_not_supported" in codes(evaluate(base_set))
+
+
+def test_build_without_gpu_is_allowed(base_set):
+    rows = [row for row in base_set if row[0].category != "gpu"]
+
+    report = evaluate(rows)
+
+    assert report.ok, report.errors
+    assert report.estimated_power_w == 125
+    assert report.recommended_psu_w == 200
