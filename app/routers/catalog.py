@@ -24,6 +24,7 @@ def list_categories(session: Session = Depends(get_session)) -> CategoryPage:
 def list_components(
     category: Category | None = None,
     search: str | None = Query(default=None, max_length=64),
+    min_year: int | None = Query(default=None, ge=1990, le=2100),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
@@ -31,6 +32,8 @@ def list_components(
     query = select(Component)
     if category is not None:
         query = query.where(Component.category == category.value)
+    if min_year is not None:
+        query = query.where(Component.released_year >= min_year)
     if search:
         pattern = f"%{search.strip()}%"
         query = query.where(or_(Component.brand.ilike(pattern), Component.model.ilike(pattern)))

@@ -39,6 +39,8 @@ class Component(Base):
     wattage_w: Mapped[int | None] = mapped_column(Integer)
     # ram / storage
     capacity_gb: Mapped[int | None] = mapped_column(Integer)
+    # год выхода модели на рынок (появился в 0.2.0, допускает NULL)
+    released_year: Mapped[int | None] = mapped_column(Integer)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

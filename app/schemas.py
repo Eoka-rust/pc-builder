@@ -23,6 +23,7 @@ class ComponentOut(BaseModel):
     length_mm: int | None = None
     wattage_w: int | None = None
     capacity_gb: int | None = None
+    released_year: int | None = None
 
 
 class ComponentPage(BaseModel):

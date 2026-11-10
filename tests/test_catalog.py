@@ -57,3 +57,16 @@ def test_component_by_id_and_missing(client, catalog):
 def test_price_note_is_returned(client):
     page = client.get("/catalog/components").json()
     assert "не live-прайс" in page["price_note"]
+
+
+def test_released_year_is_exposed(client, catalog):
+    assert catalog["Ryzen 5 7600"]["released_year"] == 2023
+
+
+def test_filter_by_min_year(client):
+    page = client.get("/catalog/components", params={"min_year": 2023, "limit": 200}).json()
+
+    assert page["items"]
+    assert {item["released_year"] for item in page["items"]} >= {2023}
+    assert all(item["released_year"] >= 2023 for item in page["items"])
+    assert page["total"] < client.get("/catalog/components").json()["total"]

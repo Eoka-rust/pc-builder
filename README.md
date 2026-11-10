@@ -45,7 +45,7 @@ curl -X POST http://localhost:8000/builds/check -H "Content-Type: application/js
 | GET | `/health` | статус и версия образа (`APP_VERSION`), проверка БД |
 | GET | `/version` | версия сервиса |
 | GET | `/catalog/categories` | категории и количество позиций |
-| GET | `/catalog/components?category=&search=&limit=&offset=` | каталог с фильтрами |
+| GET | `/catalog/components?category=&search=&min_year=&limit=&offset=` | каталог с фильтрами |
 | GET | `/catalog/components/{id}` | одна комплектующая |
 | POST | `/builds/check` | проверить сборку без сохранения |
 | POST | `/builds` | сохранить сборку (422 с причинами, если несовместима) |
