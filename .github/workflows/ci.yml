@@ -36,12 +36,11 @@ jobs:
       DATABASE_URL: postgresql+psycopg://pcbuilder:testpass@localhost:5432/pcbuilder_test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version-file: .python-version
           enable-cache: true
 
       - name: Install dependencies
