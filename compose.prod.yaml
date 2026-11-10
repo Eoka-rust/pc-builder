@@ -1,0 +1,8 @@
+# Прод-оверлей: образ только из ghcr.io, локальной сборки нет.
+# Выкат:   IMAGE_TAG=0.2.0 docker compose -f compose.yaml -f compose.prod.yaml up -d
+# Откат:   IMAGE_TAG=0.1.0 docker compose -f compose.yaml -f compose.prod.yaml up -d
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER:?Задайте GHCR_OWNER в .env}/pc-builder:${IMAGE_TAG:-latest}
+    pull_policy: always
+    build: !reset null
