@@ -67,39 +67,59 @@ docker compose exec api alembic history --verbose
 docker compose logs api | findstr /i alembic
 ```
 
-- `Can't locate revision` — в образе нет файла миграции: пересоберите/перевыкатите образ.
-- Миграция применена частично (PostgreSQL DDL транзакционен; при падении откатывается сам):
+- `Can't locate revision identified by '0002_released_year'` — в образе нет файла этой
+  миграции (старый тег на новой схеме). Это ошибка отката, см. п. 4, вариант Б.
+- `Can't locate revision` на новом образе — в образ не попали файлы миграций: пересоберите
+  образ или перевыкатите тег.
+- Миграция применена частично: PostgreSQL DDL транзакционен, при падении откатывается сам;
   повторите `docker compose exec api alembic upgrade head`.
-- Нужно вернуть схему назад (только вместе с откатом образа, см. п. 4):
+- Нужно вернуть схему на предыдущую ревизию: `docker compose exec api alembic downgrade -1`
+  (осознанно: удаляются данные из откатываемых колонок).
+
+## 4. Откат на предыдущую версию
+
+Откат — это смена тега образа; сборка не выполняется. Порядок зависит от того,
+пересекает ли откат границу миграции.
+
+### Вариант А — в пределах одной ревизии схемы (0.2.2 → 0.2.1 → 0.2.0)
 
 ```bash
-docker compose exec api alembic downgrade -1
+curl -s http://localhost:8000/health          # что сейчас
+IMAGE_TAG=0.2.1 docker compose -f compose.yaml -f compose.prod.yaml up -d
+curl -s http://localhost:8000/health          # {"status":"ok","version":"0.2.1",...}
+docker compose -f compose.yaml -f compose.prod.yaml exec -T api alembic current
 ```
 
-## 4. Откат на предыдущую версию (основной сценарий)
+Схема не трогается: ревизия одна и та же.
 
-Откат — это смена тега образа; сборка не выполняется.
+### Вариант Б — через границу миграции (0.2.x → 0.1.0)
+
+Образ `0.1.0` запускает `alembic upgrade head` и не знает ревизии `0002_released_year`,
+поэтому падает с `Can't locate revision`. Сначала опускаем схему текущим образом:
 
 ```bash
-# узнать, что сейчас
-curl -s http://localhost:8000/health
+# 1. откатить схему на ревизию, известную старому образу
+IMAGE_TAG=0.2.2 docker compose -f compose.yaml -f compose.prod.yaml up -d
+docker compose -f compose.yaml -f compose.prod.yaml exec -T api alembic downgrade 0001_initial
 
-# откатить на предыдущий релиз
+# 2. переключить образ
 IMAGE_TAG=0.1.0 docker compose -f compose.yaml -f compose.prod.yaml up -d
-curl -s http://localhost:8000/health      # {"status":"ok","version":"0.1.0",...}
+curl -s http://localhost:8000/health          # version 0.1.0
+curl -s http://localhost:8000/catalog/categories
 ```
 
-Быстрая проверка работоспособности после отката:
+Данные сборок сохраняются; теряются только значения `released_year` (их не существует в
+схеме 0001). Для образов 0.2.2 и новее вместо downgrade можно отключить миграции при
+старте: `RUN_MIGRATIONS=false` (если миграции выполняет отдельный шаг деплоя).
+
+### Проверка, что сервис жив после отката
 
 ```bash
-curl -s http://localhost:8000/catalog/categories
+curl -s http://localhost:8000/health
+curl -s "http://localhost:8000/catalog/components?limit=1"
 curl -s -X POST http://localhost:8000/builds/check -H "Content-Type: application/json" \
   -d '{"name":"smoke","items":[{"component_id":1,"quantity":1}]}'
 ```
-
-Откат схемы не требуется: миграции обратно совместимые (expand/contract, см. README).
-Если откат делается через несколько версий вперёд и старая версия не читает новые
-колонки — она их просто игнорирует, `NOT NULL`-полей без default не добавлялось.
 
 Список доступных версий:
 

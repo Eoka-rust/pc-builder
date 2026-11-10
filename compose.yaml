@@ -29,6 +29,9 @@ services:
       # APP_VERSION не задаём: версия приходит из образа (build-arg при релизе),
       # иначе env перекрывает её и /health врёт про выкаченную версию.
       SEED_ON_START: ${SEED_ON_START:-true}
+      # false — не запускать alembic при старте (например, если миграции делает
+      # отдельный шаг деплоя или выполняется откат на старый образ)
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     depends_on:
       db:
         condition: service_healthy
