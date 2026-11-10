@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Конструктор сборки ПК: каталог комплектующих и проверка совместимости"
+    />
+    <title>Сборка ПК — конструктор комплектующих</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#catalog">К каталогу</a>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">PC</span>
+        <div>
+          <h1>Конструктор сборки</h1>
+          <p class="brand-sub">Каталог комплектующих и проверка совместимости</p>
+        </div>
+      </div>
+      <div class="topbar-meta">
+        <span class="version" id="version" title="Версия выкаченного образа">—</span>
+        <a class="ghost-link" href="/docs">API</a>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="slots" aria-label="Категории комплектующих">
+        <h2 class="panel-title">Комплектующие</h2>
+        <div id="slots" class="slot-list"></div>
+      </aside>
+
+      <main id="catalog" class="catalog">
+        <div class="toolbar">
+          <label class="search">
+            <span class="visually-hidden">Поиск по каталогу</span>
+            <input
+              id="search"
+              type="search"
+              placeholder="Поиск: B650, Ryzen, RTX…"
+              autocomplete="off"
+            />
+          </label>
+          <div class="toolbar-hint" id="catalog-hint">—</div>
+        </div>
+        <div id="catalog-status" class="state" role="status" hidden></div>
+        <div id="products" class="products" aria-live="polite"></div>
+      </main>
+
+      <aside class="summary" aria-label="Сборка">
+        <div class="summary-head">
+          <h2 class="panel-title">Ваша сборка</h2>
+          <button id="clear" class="link-button" type="button">Очистить</button>
+        </div>
+
+        <div id="selection" class="selection"></div>
+
+        <div class="totals">
+          <div class="total-row">
+            <span>Итого</span>
+            <strong id="total">0 ₽</strong>
+          </div>
+          <div class="total-row muted">
+            <span>Потребление</span>
+            <span id="power">—</span>
+          </div>
+          <div class="total-row muted">
+            <span>Рекомендуемый БП</span>
+            <span id="psu">—</span>
+          </div>
+        </div>
+
+        <div id="diagnostics" class="diagnostics" role="status" aria-live="polite">
+          <p class="diag-empty">Добавьте комплектующие — совместимость проверится сама.</p>
+        </div>
+
+        <div class="summary-actions">
+          <button id="save" class="primary" type="button" disabled>Сохранить сборку</button>
+          <p class="note">
+            Цены ориентировочные: снимок каталога, а не live-прайс магазина.
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
